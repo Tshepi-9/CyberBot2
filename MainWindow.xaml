@@ -9,8 +9,7 @@
 
         <TabControl>
 
-            <!-- CHATBOT TAB -->
-
+            <!-- ================= CHATBOT TAB ================= -->
             <TabItem Header="Chatbot">
 
                 <Grid Margin="10">
@@ -69,8 +68,7 @@
 
             </TabItem>
 
-            <!-- TASK ASSISTANT TAB -->
-
+            <!-- ================= TASK ASSISTANT TAB ================= -->
             <TabItem Header="Task Assistant">
 
                 <Grid Margin="10">
@@ -130,6 +128,120 @@
                                 Content="Delete Task"
                                 Width="120"
                                 Click="DeleteTaskButton_Click"/>
+
+                    </StackPanel>
+
+                </Grid>
+
+            </TabItem>
+
+            <!-- ================= QUIZ TAB (FIXED) ================= -->
+            <TabItem Header="Quiz">
+
+                <Grid Margin="10">
+
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Score -->
+                    <TextBlock x:Name="QuizScoreText"
+                               FontSize="16"
+                               FontWeight="Bold"
+                               Text="Score: 0"
+                               Margin="0,0,0,10"/>
+
+                    <!-- Question -->
+                    <TextBlock x:Name="QuizQuestionText"
+                               Grid.Row="1"
+                               FontSize="18"
+                               TextWrapping="Wrap"
+                               Margin="0,10,0,10"/>
+
+                    <!-- Options -->
+                    <StackPanel Grid.Row="2">
+
+                        <RadioButton x:Name="OptionA" GroupName="QuizOptions" Margin="0,5"/>
+                        <RadioButton x:Name="OptionB" GroupName="QuizOptions" Margin="0,5"/>
+                        <RadioButton x:Name="OptionC" GroupName="QuizOptions" Margin="0,5"/>
+                        <RadioButton x:Name="OptionD" GroupName="QuizOptions" Margin="0,5"/>
+
+                    </StackPanel>
+
+                    <!-- Buttons + Feedback -->
+                    <StackPanel Grid.Row="3" Orientation="Vertical" Margin="0,10,0,0">
+
+                        <Button x:Name="SubmitAnswerButton"
+                                Content="Submit Answer"
+                                Height="30"
+                                Click="SubmitAnswerButton_Click"/>
+
+                        <Button x:Name="NextQuestionButton"
+                                Content="Next Question"
+                                Height="30"
+                                Margin="0,5,0,0"
+                                Click="NextQuestionButton_Click"
+                                Visibility="Collapsed"/>
+
+                        <TextBlock x:Name="QuizFeedbackText"
+                                   Margin="0,10,0,0"
+                                   FontSize="14"
+                                   TextWrapping="Wrap"/>
+
+                    </StackPanel>
+
+                </Grid>
+
+            </TabItem>
+
+            <!-- ================= ACTIVITY LOG TAB (ADDED) ================= -->
+            <TabItem Header="Activity Log">
+
+                <Grid Margin="10">
+
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Text="Activity Log"
+                               FontSize="20"
+                               FontWeight="Bold"
+                               Margin="0,0,0,10"/>
+
+                    <TextBox x:Name="ActivityLogBox"
+                             Grid.Row="1"
+                             IsReadOnly="True"
+                             AcceptsReturn="True"
+                             TextWrapping="Wrap"
+                             VerticalScrollBarVisibility="Auto"
+                             FontFamily="Consolas"
+                             FontSize="12"/>
+
+                    <StackPanel Grid.Row="2"
+                                Orientation="Horizontal"
+                                Margin="0,10,0,0">
+
+                        <Button x:Name="ShowRecentLogButton"
+                                Content="Show Recent (10)"
+                                Width="150"
+                                Margin="0,0,10,0"
+                                Click="ShowRecentLogButton_Click"/>
+
+                        <Button x:Name="ShowFullLogButton"
+                                Content="Show Full Log"
+                                Width="150"
+                                Margin="0,0,10,0"
+                                Click="ShowFullLogButton_Click"/>
+
+                        <Button x:Name="ClearLogViewButton"
+                                Content="Clear View"
+                                Width="120"
+                                Click="ClearLogViewButton_Click"/>
 
                     </StackPanel>
 

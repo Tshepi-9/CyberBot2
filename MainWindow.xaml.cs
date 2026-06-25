@@ -1,74 +1,72 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Windows; 
+﻿using System.Windows;
 
 namespace CyberBot2
 {
     public partial class MainWindow : Window
     {
-        // Chat variables
-        private string userName = "";
+        // CORE SYSTEMS
+        private TaskManager taskManager;
+        private ActivityLogger logger;
+        private QuizManager quiz;
+        private ChatBot bot;
 
-        // Task list
-        private List<TaskItem> tasks = new List<TaskItem>();
+        // USER
+        private string userName = "";
 
         public MainWindow()
         {
             InitializeComponent();
+
+            taskManager = new TaskManager();
+            logger = new ActivityLogger();
+            quiz = new QuizManager();
+
+            bot = new ChatBot(taskManager, logger, quiz);
+
+            LoadQuestion();
+            QuizScoreText.Text = quiz.GetFinalScore();
         }
 
-        // ---------------- CHATBOT ----------------
+        // ---------------- CHAT START ----------------
 
         private void StartButton_Click(object sender, RoutedEventArgs e)
         {
             userName = NameTextBox.Text.Trim();
 
-            if (string.IsNullOrEmpty(userName))
+            if (string.IsNullOrWhiteSpace(userName))
             {
-                MessageBox.Show("Please enter your name first.");
+                MessageBox.Show("Please enter your name.");
                 return;
             }
 
-            ChatDisplay.Text += $"Bot: Hello {userName}! Welcome to Cybersecurity Awareness Bot.\n";
-            ChatDisplay.Text += "Bot: Ask me anything about staying safe online.\n\n";
+            ChatDisplay.AppendText(bot.GetLogo() + "\n\n");
+            ChatDisplay.AppendText($"Bot: Welcome {userName}! I am your Cybersecurity Bot.\n");
+            ChatDisplay.AppendText("Bot: Ask me anything about cybersecurity.\n\n");
+
+            logger.Log($"User started chat: {userName}");
         }
+
+        // ---------------- CHAT SEND ----------------
 
         private void SendButton_Click(object sender, RoutedEventArgs e)
         {
-            string message = UserInput.Text.Trim();
+            string input = UserInput.Text.Trim();
 
-            if (string.IsNullOrEmpty(message))
+            if (string.IsNullOrWhiteSpace(input))
+            {
+                MessageBox.Show("Please enter a message.");
                 return;
+            }
 
-            ChatDisplay.Text += $"{userName}: {message}\n";
+            ChatDisplay.AppendText($"{userName}: {input}\n");
 
-            string response = GetBotResponse(message);
+            string response = bot.ProcessInput(input, userName);
 
-            ChatDisplay.Text += $"Bot: {response}\n\n";
+            ChatDisplay.AppendText($"Bot: {response}\n\n");
+
+            logger.Log($"User message: {input}");
 
             UserInput.Clear();
-        }
-
-        private string GetBotResponse(string input)
-        {
-            input = input.ToLower();
-
-            if (input.Contains("password"))
-                return "Use strong passwords with letters, numbers, and symbols.";
-
-            if (input.Contains("phishing"))
-                return "Phishing is when attackers trick you into giving personal info.";
-
-            if (input.Contains("virus") || input.Contains("malware"))
-                return "Malware can harm your device. Avoid suspicious links and downloads.";
-
-            if (input.Contains("privacy"))
-                return "Keep your personal information private online.";
-
-            if (input.Contains("hello") || input.Contains("hi"))
-                return "Hello! How can I help you stay safe online?";
-
-            return "Sorry, I don't understand. Try asking about passwords, phishing, malware, or privacy.";
         }
 
         // ---------------- TASK ASSISTANT ----------------
@@ -79,21 +77,16 @@ namespace CyberBot2
             string description = TaskDescriptionTextBox.Text.Trim();
             string reminder = TaskReminderTextBox.Text.Trim();
 
-            if (string.IsNullOrEmpty(title))
+            if (string.IsNullOrWhiteSpace(title))
             {
-                MessageBox.Show("Please enter a task title.");
+                MessageBox.Show("Enter a task title.");
                 return;
             }
 
-            TaskItem task = new TaskItem
-            {
-                Title = title,
-                Description = description,
-                Reminder = reminder,
-                IsCompleted = false
-            };
+            taskManager.AddTask(title, description, reminder);
 
-            tasks.Add(task);
+            logger.Log($"Task added manually: {title}");
+
             RefreshTaskList();
 
             TaskTitleTextBox.Clear();
@@ -109,7 +102,13 @@ namespace CyberBot2
                 return;
             }
 
-            tasks[TaskListBox.SelectedIndex].IsCompleted = true;
+            var tasks = taskManager.GetAllTasks();
+            var task = tasks[TaskListBox.SelectedIndex];
+
+            taskManager.MarkAsComplete(task.Id);
+
+            logger.Log($"Task completed: {task.Title}");
+
             RefreshTaskList();
         }
 
@@ -121,7 +120,13 @@ namespace CyberBot2
                 return;
             }
 
-            tasks.RemoveAt(TaskListBox.SelectedIndex);
+            var tasks = taskManager.GetAllTasks();
+            var task = tasks[TaskListBox.SelectedIndex];
+
+            taskManager.DeleteTask(task.Id);
+
+            logger.Log($"Task deleted: {task.Title}");
+
             RefreshTaskList();
         }
 
@@ -129,24 +134,110 @@ namespace CyberBot2
         {
             TaskListBox.Items.Clear();
 
-            foreach (var task in tasks)
+            var tasks = taskManager.GetAllTasks();
+
+            foreach (var t in tasks)
             {
-                string status = task.IsCompleted ? " Completed" : " Pending";
+                string status = t.IsComplete ? "Completed" : "Pending";
 
                 TaskListBox.Items.Add(
-                    $"{task.Title} - {task.Description} - Reminder: {task.Reminder} [{status}]"
+                    $"{t.Title} - {t.Description} - Reminder: {t.Reminder} [{status}]"
                 );
             }
         }
-    }
 
-    // ---------------- TASK CLASS ----------------
+        // ---------------- QUIZ ----------------
 
-    public class TaskItem
-    {
-        public string Title { get; set; }
-        public string Description { get; set; }
-        public string Reminder { get; set; }
-        public bool IsCompleted { get; set; }
+        private void LoadQuestion()
+        {
+            if (quiz.IsFinished())
+            {
+                QuizQuestionText.Text = "Quiz Finished!";
+                QuizFeedbackText.Text = quiz.GetFinalScore() + "\n" + quiz.GetFinalMessage();
+
+                SubmitAnswerButton.IsEnabled = false;
+                NextQuestionButton.Visibility = Visibility.Collapsed;
+
+                logger.Log("Quiz completed");
+
+                return;
+            }
+
+            var q = quiz.GetCurrentQuestion();
+
+            QuizQuestionText.Text = q.Question;
+
+            OptionA.Content = q.Options[0];
+            OptionB.Content = q.Options[1];
+            OptionC.Content = q.Options.Count > 2 ? q.Options[2] : "";
+            OptionD.Content = q.Options.Count > 3 ? q.Options[3] : "";
+
+            OptionA.IsChecked = false;
+            OptionB.IsChecked = false;
+            OptionC.IsChecked = false;
+            OptionD.IsChecked = false;
+
+            QuizFeedbackText.Text = "";
+            NextQuestionButton.Visibility = Visibility.Collapsed;
+
+            QuizScoreText.Text = quiz.GetFinalScore();
+        }
+
+        private void SubmitAnswerButton_Click(object sender, RoutedEventArgs e)
+        {
+            string answer = "";
+
+            if (OptionA.IsChecked == true) answer = "A";
+            else if (OptionB.IsChecked == true) answer = "B";
+            else if (OptionC.IsChecked == true) answer = "C";
+            else if (OptionD.IsChecked == true) answer = "D";
+            else
+            {
+                MessageBox.Show("Please select an answer.");
+                return;
+            }
+
+            var currentQuestion = quiz.GetCurrentQuestion();
+            bool correct = quiz.SubmitAnswer(answer);
+
+            if (correct)
+            {
+                QuizFeedbackText.Text = "Correct! " + currentQuestion.Explanation;
+            }
+            else
+            {
+                QuizFeedbackText.Text = "Incorrect! " + currentQuestion.Explanation;
+            }
+
+            QuizScoreText.Text = quiz.GetFinalScore();
+
+            NextQuestionButton.Visibility = Visibility.Visible;
+            SubmitAnswerButton.IsEnabled = false;
+
+            logger.Log("Quiz question answered");
+        }
+
+        private void NextQuestionButton_Click(object sender, RoutedEventArgs e)
+        {
+            SubmitAnswerButton.IsEnabled = true;
+            LoadQuestion();
+        }
+
+        // ---------------- ACTIVITY LOG ----------------
+
+        private void ShowRecentLogButton_Click(object sender, RoutedEventArgs e)
+        {
+            ActivityLogBox.Text = logger.GetRecentLog(10);
+        }
+
+        private void ShowFullLogButton_Click(object sender, RoutedEventArgs e)
+        {
+            ActivityLogBox.Text = logger.GetFullLog();
+        }
+
+        private void ClearLogViewButton_Click(object sender, RoutedEventArgs e)
+        {
+            ActivityLogBox.Clear();
+        }
     }
 }

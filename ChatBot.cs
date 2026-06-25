@@ -1,76 +1,101 @@
-﻿public class ChatBot
+﻿using System;
+
+public class ChatBot
 {
     private KeywordResponder responder;
     private SentimentDetector detector;
     private MemoryStore memory;
 
+    private TaskManager taskManager;
+    private ActivityLogger logger;
+    private QuizManager quizManager;
+
     private string currentTopic = "";
 
-    public ChatBot()
+    public string GetLogo()
+{
+    return @"
+ ██████╗██╗   ██╗██████╗ ███████╗██████╗ ██████╗  ██████╗ ████████╗
+██╔════╝╚██╗ ██╔╝██╔══██╗██╔════╝██╔══██╗██╔══██╗██╔═══██╗╚══██╔══╝
+██║      ╚████╔╝ ██████╔╝█████╗  ██████╔╝██████╔╝██║   ██║   ██║   
+██║       ╚██╔╝  ██╔══██╗██╔══╝  ██╔══██╗██╔══██╗██║   ██║   ██║   
+╚██████╗   ██║   ██████╔╝███████╗██████╔╝██║  ██║╚██████╔╝   ██║   
+ ╚═════╝   ╚═╝   ╚═════╝ ╚══════╝╚═════╝ ╚═╝  ╚═╝ ╚═════╝    ╚═╝   
+
+        ╔══════════════════════════════════════╗
+        ║   CYBERSECURITY AWARENESS BOT v3.0   ║
+        ║   Protect • Learn • Stay Safe Online  ║
+        ╚══════════════════════════════════════╝
+";
+}
+    public ChatBot(TaskManager tm, ActivityLogger log, QuizManager qm)
     {
         responder = new KeywordResponder();
         detector = new SentimentDetector();
         memory = new MemoryStore();
+
+        taskManager = tm;
+        logger = log;
+        quizManager = qm;
     }
 
-    
-    public string GetLogo()
-    {
-        return
-@"   ____      _                      _   _
-  / ___|   _| |__   ___ _ __ ___  | | | | ___  _ __
- | |  | | | | '_ \ / _ \ '__/ _ \ | |_| |/ _ \| '_ \
- | |__| |_| | |_) |  __/ | |  __/ |  _  | (_) | | | |
-  \____\__, |_.__/ \___|_|  \___| |_| |_|\___/|_| |_|
-       |___/";
-    }
-
-    
-    public string GetResponse(string input, string userName)
+    public string ProcessInput(string input, string userName)
     {
         string lower = input.ToLower();
 
-        if (lower.Contains("how are you"))
-            return $"I'm doing well, {userName}! Staying secure online.";
+        // ---------------- TASK INTENT ----------------
+        if (lower.Contains("add task") || lower.Contains("create task"))
+        {
+            string title = input.Replace("add task", "").Replace("create task", "").Trim();
 
-        if (lower.Contains("purpose"))
-            return "I help you learn how to stay safe from cyber threats.";
+            taskManager.AddTask(title, "", "");
 
-        if (lower.Contains("what can i ask"))
-            return "You can ask me about passwords, phishing, browsing, scams and privacy.";
+            logger.Log($"Task added: '{title}'");
 
+            return $"Task added: '{title}'. Would you like a reminder?";
+        }
+
+        // ---------------- QUIZ INTENT ----------------
+        if (lower.Contains("start quiz") || lower.Contains("quiz me"))
+        {
+            quizManager.ResetQuiz();
+            logger.Log("Quiz started");
+
+            return quizManager.GetCurrentQuestion().Question;
+        }
+
+        // ---------------- LOG INTENT ----------------
+        if (lower.Contains("show activity log") || lower.Contains("what have you done"))
+        {
+            logger.Log("Activity log viewed");
+            return logger.GetRecentLog();
+        }
+
+        // ---------------- SENTIMENT ----------------
         string mood = detector.DetectSentiment(input);
 
         if (mood == "worried")
-            return "It's okay to feel worried. Always verify links before clicking.";
+            return "It's okay to feel worried. Always verify links.";
 
         if (mood == "frustrated")
-            return "Cybersecurity can be confusing. Take it step by step.";
+            return "Take it step by step. Cybersecurity is learnable.";
 
         if (mood == "curious")
-            return "Great curiosity! That helps you stay safe online.";
+            return "Great curiosity! That keeps you safe.";
 
-        if (lower.Contains("tell me more") ||
-            lower.Contains("another tip") ||
-            lower.Contains("explain more"))
-        {
-            if (currentTopic != "")
-                return responder.GetKeywordResponse(currentTopic);
-
-            return "Tell me which topic you want more info about.";
-        }
-
+        // ---------------- KEYWORDS ----------------
         string[] keywords = { "password", "phishing", "privacy", "scam", "browsing" };
 
-        foreach (string keyword in keywords)
+        foreach (string k in keywords)
         {
-            if (lower.Contains(keyword))
+            if (lower.Contains(k))
             {
-                currentTopic = keyword;
-                return responder.GetKeywordResponse(keyword);
+                currentTopic = k;
+                logger.Log($"Keyword matched: {k}");
+                return responder.GetKeywordResponse(k);
             }
         }
 
-        return "I'm not sure I understand. Can you rephrase that?";
+        return "I’m not sure I understand. Try rephrasing.";
     }
 }

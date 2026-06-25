@@ -1,28 +1,30 @@
-﻿using System;
-using System.IO;
-using System.Media;
+﻿using System.Media;
 
-public class Audio
+public static void Playgreeting()
 {
-    public static void PlayGreeting()
+    try
     {
-        try
+        string path = Path.Combine(
+            AppDomain.CurrentDomain.BaseDirectory,
+            "Assets",
+            "greeting.wav");
+
+        Console.WriteLine("Looking for audio at: " + path);
+
+        if (!File.Exists(path))
         {
-            string path = Path.Combine(
-                AppDomain.CurrentDomain.BaseDirectory,
-                "Assets",
-                "greeting.wav");
+            Console.WriteLine("Audio file not found!");
+            return;
+        }
 
-            if (!File.Exists(path))
-                return;
-
-            SoundPlayer player = new SoundPlayer(path);
+        using (SoundPlayer player = new SoundPlayer(path))
+        {
             player.Load();
             player.Play();
         }
-        catch (Exception)
-        {
-            // prevents crash if audio fails
-        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine("Audio error: " + ex.Message);
     }
 }

@@ -13,7 +13,7 @@
         memory = new MemoryStore();
     }
 
-    // ✅ THIS FIXES GetLogo ERROR
+    
     public string GetLogo()
     {
         return
@@ -25,7 +25,7 @@
        |___/";
     }
 
-    // ✅ THIS FIXES GetResponse ERROR
+    
     public string GetResponse(string input, string userName)
     {
         string lower = input.ToLower();

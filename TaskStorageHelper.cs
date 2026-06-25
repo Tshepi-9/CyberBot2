@@ -1,0 +1,11 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Text;
+using Newtonsoft.Json;
+
+namespace CyberBot2
+{
+    internal class TaskStorageHelper
+    {
+    }
+}
